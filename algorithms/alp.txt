@@ -1,0 +1,46 @@
+ 1  state per slot s:
+ 2      voted(s)          // my one first-round vote
+ 3      voted_notar(s)    // which block I notarized
+ 4      bad_window(s)     // I cast Skip or a fallback vote
+ 5      its_over(s)       // I cast Finalize
+ 6      parent_ready(s)   // certs justify this parent
+
+ 7  upon ParentReady(s, parent):
+ 8      enter slot s; start local timer T_s
+ 9      if I am the leader of s:
+10          broadcast Propose(s, b, justification)
+
+11  upon Block(s, b):          // b completed replay
+12      if voted(s):
+13          do nothing
+14      else if parent_ready(s, parent(b)):
+15          broadcast Notarize(b)
+16      else:
+17          hold b as pending, retry on new certificates
+
+18  at T_s = 2Δ:
+19      if not voted(s):
+20          broadcast Skip(s)
+21          set bad_window(s)
+
+22  upon receiving <mark>60%</mark> Notarize votes for b in slot s:
+23      if <mark class="del">voted_notar(s) = b and</mark> not bad_window(s) and not its_over(s):
+24          broadcast Finalize(s, b)
+25          set its_over(s)
+
+26  <mark class="del">upon receiving 40% Notarize votes for b in slot s, or 20% Notarize for b with 60% Notarize-or-Skip for s:</mark>
+27      <mark class="del">if not voted(s):</mark>
+28          <mark class="del">broadcast Skip(s); set bad_window(s)</mark>
+29      <mark class="del">if not its_over(s) and no NotarizeFallback(b) before:</mark>
+30          <mark class="del">broadcast NotarizeFallback(b)</mark>
+31          <mark class="del">set bad_window(s)</mark>
+
+32  <mark class="del">upon receiving 40% Skip votes for s, counting Notarize votes for non-leading blocks:</mark>
+33      <mark class="del">if not voted(s):</mark>
+34          <mark class="del">broadcast Skip(s); set bad_window(s)</mark>
+35      <mark class="del">if not its_over(s) and no SkipFallback(s) before:</mark>
+36          <mark class="del">broadcast SkipFallback(s)</mark>
+37          <mark class="del">set bad_window(s)</mark>
+
+38  upon receiving <mark class="del">80% Notarize votes for b, or</mark> <mark>60%</mark> Finalize votes for s plus a notarization cert:
+39      finalize s and all its ancestors

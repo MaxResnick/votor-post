@@ -1,0 +1,40 @@
+ 1  state per slot s:
+ 2      voted(s)          // my one first-round vote
+ 3      voted_notar(s)    <mark>// which vector I notarized</mark>
+ 4      bad_window(s)     // I cast Skip or SkipFallback
+ 5      its_over(s)       // I cast Finalize
+ 6      parent_ready(s)   // certs justify this parent
+
+ 7  at T = 3sΔ:
+ 8      enter slot s  // no need to start a timer: we use T
+ 9      <mark>if I am one of the P proposers of s and ParentReady(s, parent):</mark>
+10          <mark>broadcast Propose(s, b_mine, justification)</mark>
+
+11  upon FirstShred(s, b):     // delivered by 3sΔ + Δ
+12      if voted(s):
+13          do nothing
+14      else if parent_ready(s, parent(b)):
+15          <mark>append b to B   // the slot's vector, in proposer order</mark>
+16      else:
+17          hold b as pending, retry on new certificates
+
+18  at T = 3sΔ + Δ:            <mark>// the vote fires at the delivery bound</mark>
+19      <mark>if B ≠ ⟨ ⟩:</mark>
+20          <mark>broadcast Notarize(B)   // one first-round vote, on a vector</mark>
+21      <mark>else:</mark>
+22          broadcast Skip(s)
+23          set bad_window(s)
+
+24  upon receiving 67% Notarize votes for <mark>B</mark> in slot s and <mark>every block of B</mark> reconstructed and valid:
+25      if not bad_window(s) and not its_over(s):
+26          broadcast Finalize(s, <mark>B</mark>)
+27          set its_over(s)
+
+28  at T = 3sΔ + 2Δ:
+29      if voted_notar(s), no notarization cert for s, not bad_window(s), and not its_over(s):
+30          broadcast SkipFallback(s)  // votes in, no cert
+31          set bad_window(s)
+
+32  upon receiving 67% Finalize votes for <mark>B</mark> in slot s:
+33      finalize <mark>B</mark> and its ancestors — <mark>merge the transactions of B</mark>
+          <mark>in priority order and append them to the ledger</mark>

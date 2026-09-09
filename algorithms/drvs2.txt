@@ -1,0 +1,37 @@
+ 1  state per slot s:
+ 2      voted(s)          // my one first-round vote
+ 3      voted_notar(s)    // which block I notarized
+ 4      bad_window(s)     // I cast Skip or SkipFallback
+ 5      its_over(s)       // I cast Finalize
+ 6      parent_ready(s)   // certs justify this parent
+
+ 7  <mark>upon ParentReady(s, parent):</mark>
+ 8      <mark>enter slot s; start local timer T_s</mark>
+ 9      if I am the leader of s:
+10          broadcast Propose(s, b, justification)
+
+11  upon FirstShred(s, b):     // first shred of b received
+12      if voted(s):
+13          do nothing
+14      else if parent_ready(s, parent(b)) <mark>and T_s &lt; 2Δ</mark>:
+15          broadcast Notarize(b)
+16      else:
+17          hold b as pending, retry on new certificates
+
+18  <mark>at T_s = 2Δ:</mark>
+19      if not voted(s):
+20          broadcast Skip(s)
+21          set bad_window(s)
+
+22  upon receiving 67% Notarize votes for b in slot s and Block(s, b) completed replay:
+23      if not bad_window(s) and not its_over(s):
+24          broadcast Finalize(s, b)
+25          set its_over(s)
+
+26  <mark>at T_s = 3Δ:</mark>
+27      if voted_notar(s) and not bad_window(s) and not its_over(s):
+28          broadcast SkipFallback(s)  // release: slot failed
+29          set bad_window(s)
+
+30  upon receiving 67% Finalize votes for b in slot s:
+31      finalize b and all its ancestors
