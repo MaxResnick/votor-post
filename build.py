@@ -11,10 +11,10 @@ post.md syntax (plain Markdown plus two directives):
     ... see @fig(step1) ...              inline cross-reference -> "Figure 1"
 
 Headings: `# ...` is a section heading (in the sidebar TOC), `## ...` a subsection.
-Raw HTML lines pass through untouched. Algorithm listings live in algorithms/<id>.txt
+Raw HTML lines pass through untouched. Anything under static/ is copied to out/static/. Algorithm listings live in algorithms/<id>.txt
 and are referenced by data-alg="<id>" inside the figure snippets.
 """
-import html, os, re, sys, time, threading, functools, http.server, socketserver
+import html, os, re, sys, time, threading, functools, http.server, socketserver, shutil
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 P = lambda *a: os.path.join(ROOT, *a)
@@ -140,6 +140,7 @@ def build():
     tpl = re.sub(r'<title>.*?</title>', '<title>%s</title>' % html.escape(meta.get('title', '')), tpl, count=1)
     page = tpl.replace('{{CONTENT}}', header(meta) + '\n\n' + body).replace('{{ALGORITHMS}}', algorithms())
     os.makedirs(P('out'), exist_ok=True)
+    if os.path.isdir(P('static')): shutil.copytree(P('static'), P('out', 'static'), dirs_exist_ok=True)  # images etc.
     open(P('out', 'votor-diff.html'), 'w').write(page)                         # artifact source
     open(P('out', 'index.html'), 'w').write('<!doctype html>\n<meta charset="utf-8">\n' + page)  # local preview
     return page
@@ -148,6 +149,8 @@ def sources():
     fs = [P('post.md'), P('template.html'), P('build.py')]
     for d in ('algorithms', 'figures'):
         fs += [P(d, f) for f in os.listdir(P(d))]
+    for root, _, files in os.walk(P('static')):
+        fs += [os.path.join(root, f) for f in files]
     return {f: os.stat(f).st_mtime for f in fs if os.path.exists(f)}
 
 def watch():

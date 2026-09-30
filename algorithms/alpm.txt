@@ -1,0 +1,50 @@
+ 1  state per slot s:
+ 2      voted(s)          // my one first-round vote
+ 3      voted_notar(s)    <mark>// which vector I notarized</mark>
+ 4      bad_window(s)     // I cast Skip or a fallback vote
+ 5      its_over(s)       // I cast Finalize
+ 6      parent_ready(s)   // certs justify this parent
+
+ 7  upon ParentReady(s, parent):
+ 8      enter slot s; start local timer T_s
+ 9      <mark>if I am one of the P proposers of s:</mark>
+10          <mark>broadcast Propose(s, b_mine, justification)</mark>
+
+11  upon Block(s, b):          // b completed replay
+12      if voted(s):
+13          do nothing
+14      else if parent_ready(s, parent(b)):
+15          <mark>append b to B   // the slot's vector, in proposer order</mark>
+16          <mark>if |B| = P:     // a valid block from every proposer</mark>
+17              <mark>broadcast Notarize(B)</mark>
+18      else:
+19          hold b as pending, retry on new certificates
+
+20  at T_s = 2Δ:                <mark>// otherwise, my local deadline</mark>
+21      <mark>if not voted(s) and B ≠ ⟨ ⟩:</mark>
+22          <mark>broadcast Notarize(B)</mark>
+23      <mark>else if not voted(s):</mark>
+24          broadcast Skip(s)
+25          set bad_window(s)
+
+26  upon receiving 60% Notarize votes for <mark>B</mark> in slot s:
+27      if voted_notar(s) = <mark>B</mark> and not bad_window(s) and not its_over(s):
+28          broadcast Finalize(s, <mark>B</mark>)
+29          set its_over(s)
+
+30  upon receiving 40% Notarize votes for <mark>B</mark> in slot s, or 20% Notarize for <mark>B</mark> with 60% Notarize-or-Skip for s:
+31      if not voted(s):
+32          broadcast Skip(s); set bad_window(s)
+33      if not its_over(s) and no NotarizeFallback(<mark>B</mark>) before:
+34          broadcast NotarizeFallback(<mark>B</mark>)
+35          set bad_window(s)
+
+36  upon receiving 40% Skip votes for s, counting Notarize votes for non-leading <mark>vectors</mark>:
+37      if not voted(s):
+38          broadcast Skip(s); set bad_window(s)
+39      if not its_over(s) and no SkipFallback(s) before:
+40          broadcast SkipFallback(s)
+41          set bad_window(s)
+
+42  upon receiving 80% Notarize votes for <mark>B</mark>, or 60% Finalize votes for s plus a notarization cert:
+43      finalize s and all its ancestors

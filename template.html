@@ -44,6 +44,7 @@ h2{font-size:1.5rem; font-weight:700; margin:1.6em 0 .8em}
 /* figures & algorithm boxes */
 .figure{margin:8px 0 32px}
 .figure-content{padding:8px 0; display:flex; justify-content:center}
+.figure-content img.plot{display:block; max-width:100%; height:auto}
 .figure-caption{font-size:1.1rem; line-height:1.5; color:#666; text-align:left}
 .figure-number{font-weight:600}
 .figure.wide{--w:min(1180px, calc(100vw - 340px)); width:var(--w); margin-left:calc((100% - var(--w)) / 2)}
@@ -118,7 +119,7 @@ table.t .del{color:#b3261e; font-weight:600}
 (function(){
   // --- render algorithm boxes from the plain-text sources above ---
   var CALL = /\b([A-Za-z_]\w*\((?:[^()]|\([^()]*\))*\))/g;
-  var VOTE = /\b(SkipFallback|NotarizeFallback|Notarize|Skip|Finalize|Propose|FirstShred|ParentReady|Block)\b(?![\w(])/g;
+  var VOTE = /\b(SkipFallback|NotarizeFallback|Notarize|Skip|Finalize|Propose|FinalSetShred|ParentReady|Block)\b(?![\w(])/g;
   var PCT  = /(\d+%)/g;
   var KW   = /^(\s*)(upon receiving|upon|at|else if|else|if|broadcast|set|enter slot|do nothing|hold|state per slot)\b/;
   function decorateText(t){
@@ -592,13 +593,13 @@ var LAND=[[-67.8,-53.9,-66.5,-54.5,-65.0,-54.7,-65.5,-55.2,-66.5,-55.2,-67.0,-54
       cv.addEventListener('mouseleave', function(){ tip.style.display = 'none'; });
     }
 
-    // Figure 3: Alpenglow slow path vs fast path
+    // path heatmap: Alpenglow slow path vs fast path
     mosaic({ id:'path-heatmap', max:90, col:['rgba(106,79,201,', 'rgba(194,65,12,'], labels:[['Slow Path', '#5b3fbf'], ['Fast Path', '#b45309']],
       row:function(L){ var a = alpenglow(L); return [a.slow, a.fast]; },
       tip:function(slow, fast){ return '<span style="color:#6a4fc9;font-weight:600">slow ' + Math.round(slow) + ' ms</span> · <span style="color:#c2410c">fast ' + Math.round(fast) + ' ms</span>'; },
       done:function(A, B){ window.__hm = { VALS:VALS, slowM:A, fastM:B }; } });
 
-    // Figure 5: Dispersed C-Simplex vs Alpenglow's better path
+    // dispersed heatmap: Dispersed C-Simplex vs Alpenglow's better path
     mosaic({ id:'disp-heatmap', max:15, col:['rgba(46,139,87,', 'rgba(194,65,12,'], labels:[['Dispersed', '#2e8b57'], ['Alpenglow', '#b45309']],
       row:function(L){ var a = alpenglow(L), dp = dispersed(L), alp = new Float64Array(N);
         for (var i = 0; i < N; i++) alp[i] = Math.min(a.slow[i], a.fast[i]); return [dp, alp]; },

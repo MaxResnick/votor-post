@@ -10,7 +10,7 @@
  9      if I am the leader of s:
 10          broadcast Propose(s, b, justification)
 
-11  upon FirstShred(s, b):     // first shred of b received
+11  upon FinalSetShred(s, b):  // first shred of the last FEC set of b: its id is fixed
 12      if voted(s):
 13          do nothing
 14      else if parent_ready(s, parent(b)) <mark>and T_s &lt; 2Δ</mark>:

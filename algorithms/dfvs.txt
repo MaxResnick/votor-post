@@ -10,7 +10,7 @@
  9      if I am the leader of s <mark>and ParentReady(s, parent)</mark>:
 10          broadcast Propose(s, b, justification)
 
-11  upon FirstShred(s, b):     <mark>// delivered by 3sΔ + Δ</mark>
+11  upon FinalSetShred(s, b):  <mark>// delivered by 3sΔ + Δ</mark>
 12      if voted(s):
 13          do nothing
 14      else if parent_ready(s, parent(b)):

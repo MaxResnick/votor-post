@@ -10,7 +10,7 @@
  9      <mark>if I am one of the P proposers of s and ParentReady(s, parent):</mark>
 10          <mark>broadcast Propose(s, b_mine, justification)</mark>
 
-11  upon FirstShred(s, b):     // delivered by 3sΔ + Δ
+11  upon FinalSetShred(s, b):  // delivered by 3sΔ + Δ
 12      if voted(s):
 13          do nothing
 14      else if parent_ready(s, parent(b)):
