@@ -6,6 +6,7 @@ author_url: https://anza.xyz
 date: September 1, 2026
 ---
 
+@hide
 # What the scheduler changes
 
 @figure sched-ordering: Where transactions land against where they were sent, for four schedulers. A point on the diagonal landed in send order; shade is the priority-fee percentile.
@@ -20,6 +21,8 @@ date: September 1, 2026
 
 @figure sched-transitions: What changes when a leader window hands from the row scheduler to the column scheduler: trade probability, prop-AMM volume, oracle-update count and cost, and 5-second and 30-second maker markout.
 
+
+@endhide
 
 # Option 1 · Straight from Alpenglow to MinCP
 
@@ -49,10 +52,12 @@ date: September 1, 2026
 
 @figure step3:
 
+@hide
 # Step 4 · Asynchronous execution
 
 @figure step4:
+@endhide
 
-# Step 5 · Dispersed C-Simplex FVS → MinCP
+# Step 4 · Dispersed C-Simplex FVS → MinCP
 
 @figure step5:

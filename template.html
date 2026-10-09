@@ -121,7 +121,7 @@ table.t .del{color:#b3261e; font-weight:600}
   var CALL = /\b([A-Za-z_]\w*\((?:[^()]|\([^()]*\))*\))/g;
   var VOTE = /\b(SkipFallback|NotarizeFallback|Notarize|Skip|Finalize|Propose|FinalSetShred|ParentReady|Block)\b(?![\w(])/g;
   var PCT  = /(\d+%)/g;
-  var KW   = /^(\s*)(upon receiving|upon|at|else if|else|if|broadcast|set|enter slot|do nothing|hold|state per slot)\b/;
+  var KW   = /^(\s*)(upon receiving|upon|at|else if|else|if|broadcast|set|enter slot|do nothing|hold|remove|state per slot)\b/;
   function decorateText(t){
     var ci = t.indexOf('//');
     var code = ci >= 0 ? t.slice(0, ci) : t, cm = ci >= 0 ? t.slice(ci) : '';
@@ -208,7 +208,7 @@ var LAND=[[-67.8,-53.9,-66.5,-54.5,-65.0,-54.7,-65.5,-55.2,-66.5,-55.2,-67.0,-54
     'SEL|TYO':17,'SEL|SIN':40,'SEL|LAX':65,'SEL|ASH':90,'SEL|NYC':92,'SEL|CHI':82,'SEL|FRA':118,'SEL|AMS':116,'SEL|LON':115,'SEL|PAR':116,'SEL|DUB':120,'SEL|STO':110,'SEL|SIA':112
   };
   function ow(a, b){ if (a === b) return 0.3; var v = OW[a + '|' + b]; return v != null ? v : OW[b + '|' + a]; }
-  var COL = { notar:'#2e8b57', fin:'#6a4fc9', fast:'#c2410c', idle:'#bbb' };
+  var COL = { notar:'#2e8b57', fin:'#6a4fc9', fast:'#c2410c', alp:'#222', idle:'#bbb' };
 
   var SCEN = [ { leader:'FRA' } ];
 
@@ -216,16 +216,16 @@ var LAND=[[-67.8,-53.9,-66.5,-54.5,-65.0,-54.7,-65.5,-55.2,-66.5,-55.2,-67.0,-54
 
   function run(sc){
     var L = -1; for (var q = 0; q < N; q++) if (VALS[q][1] === sc.leader){ L = q; break; } // largest validator in that metro leads
-    var a = alpenglow(L), d = deliveries(L).d, slowList = [], fastList = [], i;
-    for (i = 0; i < N; i++){ slowList.push([a.slow[i], VALS[i][2], i]); fastList.push([a.fast[i], VALS[i][2], i]); }
-    slowList.sort(byT); fastList.sort(byT);
+    var a = alpenglow(L), d = deliveries(L).d, slowList = [], fastList = [], alpList = [], i;
+    for (i = 0; i < N; i++){ slowList.push([a.slow[i], VALS[i][2], i]); fastList.push([a.fast[i], VALS[i][2], i]); alpList.push([Math.min(a.slow[i], a.fast[i]), VALS[i][2], i]); }
+    slowList.sort(byT); fastList.sort(byT); alpList.sort(byT);  // Alpenglow finalizes on whichever path is first
     var mSlow = crossingArr(slowList, 50), mFast = crossingArr(fastList, 50);
     var firstSlow = slowList[0][0], firstFast = fastList[0][0];
     var who = function(k){ return VALS[k][0] + ' (' + VALS[k][4] + ')'; };
     var firstSlowV = who(slowList[0][2]), firstFastV = who(fastList[0][2]);
     var T_END = Math.ceil(Math.max(slowList[N-1][0], fastList[N-1][0]) / 10) * 10 + 10;
     var Lname = CITIES.filter(function(c){ return c.id === sc.leader; })[0].name;
-    return { L:L, d:d, slowT:a.slow, fastT:a.fast, slowList:slowList, fastList:fastList, mSlow:mSlow, mFast:mFast, T_END:T_END };
+    return { L:L, d:d, slowT:a.slow, fastT:a.fast, slowList:slowList, fastList:fastList, alpList:alpList, mSlow:mSlow, mFast:mFast, T_END:T_END };
   }
 
   // ---- rendering ----
@@ -320,16 +320,18 @@ var LAND=[[-67.8,-53.9,-66.5,-54.5,-65.0,-54.7,-65.5,-55.2,-66.5,-55.2,-67.0,-54
     var step = T > 160 ? 50 : 25;
     for (var q = 0; q <= T; q += step) { ctx.fillStyle = '#ccc'; ctx.fillRect(CX(q) - 0.5, cy1 - 3, 1, 6);
       ctx.fillStyle = '#999'; ctx.fillText(q + (q === 0 ? '' : ' ms'), CX(q), cy1 + 11); }
-    function curve(ev, color){ ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.beginPath();
+    function curve(ev, color, dash){ ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.setLineDash(dash || []); ctx.beginPath();
       var s = 0, lastY = CY(0); ctx.moveTo(cx0, lastY);
       for (var i = 0; i < ev.length; i++) { if (ev[i][0] > t) break; var x = CX(ev[i][0]);
         ctx.lineTo(x, lastY); s += ev[i][1]; lastY = CY(Math.min(s, 100)); ctx.lineTo(x, lastY); }
       ctx.lineTo(CX(Math.min(t, T)), lastY); ctx.stroke(); }
     curve(sim.slowList, COL.fin);
     curve(sim.fastList, COL.fast);
+    curve(sim.alpList, COL.alp, [5, 3]); ctx.setLineDash([]);  // dashed so the path it tracks stays visible
     ctx.font = '10px ' + FONT; ctx.textAlign = 'left';
     ctx.fillStyle = COL.fin; ctx.fillText('slow path', cx0 + 8, cy0 + 2);
     ctx.fillStyle = COL.fast; ctx.fillText('fast path', cx0 + 8, cy0 + 14);
+    ctx.fillStyle = COL.alp; ctx.fillText('Alpenglow (first of the two)', cx0 + 8, cy0 + 26);
     ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(CX(Math.min(t, T)), cy0 - 6); ctx.lineTo(CX(Math.min(t, T)), cy1); ctx.stroke();
   };

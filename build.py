@@ -8,6 +8,7 @@
 post.md syntax (plain Markdown plus two directives):
 
     @figure step1: caption text          a figure from figures/step1.html, numbered in order
+    @hide / @endhide                     everything between is left out of the page
     ... see @fig(step1) ...              inline cross-reference -> "Figure 1"
 
 Headings: `# ...` is a section heading (in the sidebar TOC), `## ...` a subsection.
@@ -53,6 +54,15 @@ def parse_front(lines):
 def render(md):
     lines = md.split('\n')
     meta, lines = parse_front(lines)
+
+    # drop @hide ... @endhide blocks entirely (they also vanish from figure numbering)
+    kept, hidden = [], False
+    for ln in lines:
+        t = ln.strip()
+        if t == '@hide': hidden = True; continue
+        if t == '@endhide': hidden = False; continue
+        if not hidden: kept.append(ln)
+    lines = kept
 
     # first pass: figure numbers
     fignum, n = {}, 0

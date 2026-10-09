@@ -8,24 +8,24 @@
  7  at T = 3sΔ:
  8      enter slot s  // no need to start a timer: we use T
  9      <mark>if I am the leader of s and ParentReady(s, parent):</mark>
-10          broadcast Propose(s, b, justification)
+10          <mark>broadcast Propose(s, b, justification)</mark>
 
-11  upon FinalSetShred(s, b):  // delivered by 3sΔ + Δ
-12      if voted(s):
-13          do nothing
-14      else if parent_ready(s, parent(b)):
+11  <mark>upon FinalSetShred(s, b):  // delivered by 3sΔ + Δ</mark>
+12      <mark>if voted(s):</mark>
+13          <mark>do nothing</mark>
+14      <mark>else if parent_ready(s, parent(b)):</mark>
 15          <mark>broadcast Notarize(b)</mark>
-16      else:
-17          hold b as pending, retry on new certificates
+16      <mark>else:</mark>
+17          <mark>hold b as pending, retry on new certificates</mark>
 
 18  at T = 3sΔ + Δ:
 19      <mark>if not voted(s):</mark>
 20          broadcast Skip(s)
 21          set bad_window(s)
 
-22  upon receiving 67% Notarize votes for <mark>b</mark> in slot s and <mark>b</mark> reconstructed and valid:
+22  upon receiving 67% Notarize votes for <mark>b</mark> in slot s and <mark>Block(s, b)</mark> completed replay:
 23      if not bad_window(s) and not its_over(s):
-24          broadcast Finalize(s, b)
+24          broadcast Finalize(s, <mark>b</mark>)
 25          set its_over(s)
 
 26  at T = 3sΔ + 2Δ:
@@ -34,4 +34,4 @@
 29          set bad_window(s)
 
 30  upon receiving 67% Finalize votes for <mark>b</mark> in slot s:
-31      <mark>finalize b</mark> and all its ancestors   // then execute the log, asynchronously
+31      <mark>finalize b</mark> and all its ancestors

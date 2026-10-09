@@ -4,37 +4,33 @@
  4      bad_window(s)     // I cast Skip or SkipFallback
  5      its_over(s)       // I cast Finalize
  6      parent_ready(s)   // certs justify this parent
+ 7      <mark>live(s)           // proposers that have met every deadline so far</mark>
 
- 7  at T = 3sΔ:
- 8      enter slot s  // no need to start a timer: we use T
- 9      <mark>if I am one of the P proposers of s and ParentReady(s, parent):</mark>
-10          <mark>broadcast Propose(s, b_mine, justification)</mark>
+ 8  at T = 3sΔ:
+ 9      enter slot s  // no need to start a timer: we use T
+10      <mark>live(s) ← the P proposers of s</mark>
+11      <mark>if I am one of the P proposers of s and ParentReady(s, parent):</mark>
+12          <mark>broadcast Propose(s, b_mine, justification)   // one FEC set per deadline D_1 … D_K</mark>
 
-11  upon FinalSetShred(s, b):  // delivered by 3sΔ + Δ
-12      if voted(s):
-13          do nothing
-14      else if parent_ready(s, parent(b)):
-15          <mark>append b to B   // the slot's vector, in proposer order</mark>
-16      else:
-17          hold b as pending, retry on new certificates
+13  <mark>at T = D_k, for k = 1 … K:   // batch deadlines, D_1 &lt; … &lt; D_K = 3sΔ + Δ</mark>
+14      <mark>remove from live(s) every proposer whose FEC set k has not arrived</mark>
 
-18  at T = 3sΔ + Δ:            <mark>// the vote fires at the delivery bound</mark>
-19      <mark>if B ≠ ⟨ ⟩:</mark>
-20          <mark>broadcast Notarize(B)   // one first-round vote, on a vector</mark>
-21      <mark>else:</mark>
-22          broadcast Skip(s)
-23          set bad_window(s)
+15  at T = 3sΔ + Δ:
+16      <mark>if live(s) ≠ ∅ and parent_ready(s, parent):</mark>
+17          <mark>broadcast Notarize(B)   // B = live(s)</mark>
+18      <mark>else:</mark>
+19          broadcast Skip(s)
+20          set bad_window(s)
 
-24  upon receiving 67% Notarize votes for <mark>B</mark> in slot s and <mark>every block of B</mark> reconstructed and valid:
-25      if not bad_window(s) and not its_over(s):
-26          broadcast Finalize(s, <mark>B</mark>)
-27          set its_over(s)
+21  upon receiving 67% Notarize votes for <mark>B</mark> in slot s and <mark>zip(B)</mark> completed replay:
+22      if not bad_window(s) and not its_over(s):
+23          broadcast Finalize(s, <mark>B</mark>)
+24          set its_over(s)
 
-28  at T = 3sΔ + 2Δ:
-29      if voted_notar(s), no notarization cert for s, not bad_window(s), and not its_over(s):
-30          broadcast SkipFallback(s)  // votes in, no cert
-31          set bad_window(s)
+25  at T = 3sΔ + 2Δ:
+26      if voted_notar(s), no notarization cert for s, not bad_window(s), and not its_over(s):
+27          broadcast SkipFallback(s)  // votes in, no cert
+28          set bad_window(s)
 
-32  upon receiving 67% Finalize votes for <mark>B</mark> in slot s:
-33      finalize <mark>B</mark> and its ancestors — <mark>merge the transactions of B</mark>
-          <mark>in priority order and append them to the ledger</mark>
+29  upon receiving 67% Finalize votes for <mark>B</mark> in slot s:
+30      <mark>finalize zip(B)</mark> and all its ancestors   <mark>// zip: for k = 1 … K, batch k = FEC set k from every proposer in B, transactions in priority order</mark>
